@@ -1,0 +1,18 @@
+:root{--ink:#132238;--muted:#526276;--blue:#175cd3;--line:#d9e1ea;--bg:#f6f8fb;--green:#067647}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.6}
+button,select{font:inherit}:focus-visible{outline:3px solid #7c3aed;outline-offset:3px}
+.c{width:min(960px,calc(100% - 32px));margin:auto}.nav{padding:22px 0;font-weight:800;font-size:20px}.nav b{color:var(--blue)}
+h1{font-size:clamp(34px,6vw,58px);line-height:1.05;letter-spacing:-.04em;margin:8px 0 16px}h2{margin:.2em 0}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.12em;color:var(--blue);text-transform:uppercase}
+.muted{color:var(--muted)}.lead{font-size:19px;color:var(--muted);max-width:640px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px;margin:18px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.field{display:grid;gap:6px}.field label{font-weight:700}
+select{padding:11px;border:1px solid #bcc8d6;border-radius:9px;background:#fff}
+.btn{border:0;border-radius:10px;padding:13px 20px;font-weight:800;cursor:pointer;background:var(--blue);color:#fff}.btn:disabled{opacity:.6}.btn.alt{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.err{background:#fef3f2;color:#b42318;padding:10px;border-radius:8px;margin-bottom:14px}
+.score{font-size:60px;font-weight:800;letter-spacing:-.05em}.bar{height:10px;background:#e9eef5;border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;background:var(--blue)}
+.dl{padding:12px 0;border-bottom:1px solid #edf0f4}.dl:last-child{border:0}.tag{font-size:12px;font-weight:800;color:#9a6700}.tag.ok{color:var(--green)}
+.task{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #edf0f4}.task:last-child{border:0}.n{width:28px;height:28px;border-radius:50%;background:#eaf2ff;color:var(--blue);display:grid;place-items:center;font-weight:800;flex:none}
+.price{font-size:32px;font-weight:800}.foot{padding:36px 0;color:var(--muted);font-size:12px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+@media print{.noprint{display:none}body{background:#fff}.card{border:0;padding:0}}

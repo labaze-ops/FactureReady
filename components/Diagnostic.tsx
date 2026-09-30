@@ -1,52 +1,54 @@
- "use client";
-import {FormEvent, useState} from "react";
-import {ArrowRight, CheckCircle2, Clock3, ShieldCheck} from "lucide-react";
-import {diagnose, Result} from "../lib/diagnostic";
+"use client";
+import { FormEvent, useState } from "react";
+import { diagnose, valid, Result, Answers } from "../lib/diagnostic";
 
-export default function Diagnostic(){
- const [result,setResult]=useState<Result|null>(null); const [error,setError]=useState("");
- function submit(e:FormEvent<HTMLFormElement>){
-  e.preventDefault(); setError("");
-  const f=new FormData(e.currentTarget);
-  const size=String(f.get("size")||""),vat=String(f.get("vat")||""),b2b=String(f.get("b2b")||""),software=String(f.get("software")||"");
-  if(!size||!vat||!b2b||!software){setError("Veuillez compléter tous les champs.");return}
-  setResult(diagnose({size,vat,b2b,software}));
-  setTimeout(()=>document.getElementById("result")?.scrollIntoView({behavior:"smooth"}),50);
- }
- return <section id="diagnostic" className="section">
-  <div className="container">
-   <div className="sectionHead"><div className="eyebrow">Diagnostic gratuit</div><h2>En 2 minutes, obtenez votre plan d'action.</h2><p className="muted">Aucune installation. Vos réponses servent uniquement à personnaliser le diagnostic dans cette version.</p></div>
-   <form className="formCard" onSubmit={submit}>
-    {error&&<div className="error" role="alert">{error}</div>}
-    <div className="formGrid">
-     <div className="field"><label htmlFor="size">Taille de l'entreprise</label><select id="size" name="size" defaultValue=""><option value="" disabled>Choisir…</option><option value="micro">Micro-entreprise</option><option value="pme">PME</option><option value="eti">ETI</option><option value="large">Grande entreprise</option></select></div>
-     <div className="field"><label htmlFor="vat">Assujettissement à la TVA</label><select id="vat" name="vat" defaultValue=""><option value="" disabled>Choisir…</option><option value="yes">Oui</option><option value="no">Non / exonéré</option></select></div>
-     <div className="field"><label htmlFor="b2b">Clients B2B en France</label><select id="b2b" name="b2b" defaultValue=""><option value="" disabled>Choisir…</option><option value="yes">Oui</option><option value="no">Non</option></select></div>
-     <div className="field"><label htmlFor="software">Logiciel de facturation</label><select id="software" name="software" defaultValue=""><option value="" disabled>Choisir…</option><option value="yes">Oui</option><option value="no">Non</option></select></div>
-    </div>
-    <div className="formFooter"><button className="btn primary" type="submit">Voir mon diagnostic <ArrowRight size={17}/></button></div>
-   </form>
-  </div>
- </section>
-}
+export default function Diagnostic() {
+  const [res, setRes] = useState<Result | null>(null);
+  const [ans, setAns] = useState<Answers | null>(null);
+  const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
 
-export function DiagnosticResult({result}:{result:Result}){
- return <section id="result" className="section">
-  <div className="container">
-   <div className="result">
-    <div className="resultCard">
-      <span className="badge"><ShieldCheck size={15}/> Diagnostic terminé</span>
-      <div className="bigScore">{result.score}<span style={{fontSize:18,color:"#526276"}}>/100</span></div>
-      <h3>Votre préparation</h3><div className="progress"><i style={{width:`${result.score}%`}}/></div><p className="muted">{result.summary}</p>
-      <div className="deadline"><strong>1er septembre 2026</strong><span>Réception électronique pour les entreprises concernées.</span></div>
-      <div className="deadline"><strong>1er septembre 2027</strong><span>Émission électronique et e-reporting pour les PME et micro-entreprises concernées.</span></div>
-    </div>
-    <div className="resultCard">
-      <h2 style={{marginTop:0}}>{result.title}</h2><p className="muted">Voici les prochaines actions à vérifier.</p>
-      {result.actions.map((x,i)=><div className="task" key={x.title}><div className="taskNum">{i+1}</div><div><strong>{x.title}</strong><div className="muted">{x.body}</div></div></div>)}
-      <div className="priceBox"><div className="eyebrow">Rapport premium</div><h3 style={{marginBottom:4}}>Votre checklist PDF personnalisée</h3><p className="muted">Synthèse, échéances, actions et sources officielles à conserver.</p><div className="price">19 €</div><button className="btn primary" onClick={()=>alert("MVP : connecter ce bouton à Stripe Checkout.")}>Obtenir mon rapport <ArrowRight size={17}/></button></div>
-    </div>
-   </div>
-  </div>
- </section>
+  function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault(); setErr("");
+    const f = Object.fromEntries(new FormData(e.currentTarget)) as Partial<Answers>;
+    if (!valid(f)) return setErr("Veuillez compléter tous les champs.");
+    setAns(f); setRes(diagnose(f));
+    setTimeout(() => document.getElementById("result")?.scrollIntoView({ behavior: "smooth" }), 50);
+  }
+  async function buy() {
+    if (!ans) return; setBusy(true); setErr("");
+    try {
+      const r = await fetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(ans) });
+      const j = await r.json(); if (!r.ok || !j.url) throw new Error(j.error || "Paiement indisponible");
+      window.location.href = j.url;
+    } catch (x) { setErr((x as Error).message); setBusy(false); }
+  }
+  const Sel = ({ id, label, opts }: { id: string; label: string; opts: [string, string][] }) => (
+    <div className="field"><label htmlFor={id}>{label}</label>
+      <select id={id} name={id} defaultValue=""><option value="" disabled>Choisir…</option>{opts.map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select></div>);
+
+  return (<>
+    <form id="diagnostic" className="card" onSubmit={submit}>
+      <div className="eyebrow">Diagnostic gratuit · 2 minutes</div><h2>Quelle est votre situation ?</h2>
+      {err && !res && <div className="err" role="alert">{err}</div>}
+      <div className="grid">
+        <Sel id="size" label="Taille de l'entreprise" opts={[["micro", "Micro-entreprise / TPE (< 50 salariés)"], ["pme", "PME"], ["eti", "ETI"], ["large", "Grande entreprise"]]} />
+        <Sel id="vat" label="Assujetti à la TVA ?" opts={[["yes", "Oui"], ["no", "Non / franchise en base"]]} />
+        <Sel id="b2b" label="Clients professionnels en France ?" opts={[["yes", "Oui"], ["no", "Non"]]} />
+        <Sel id="software" label="Logiciel de facturation ?" opts={[["yes", "Oui"], ["no", "Non"]]} />
+      </div>
+      <p><button className="btn" type="submit">Voir mon diagnostic</button></p>
+    </form>
+    {res && <section id="result" className="card" aria-live="polite">
+      <div className="eyebrow">Résultat</div><div className="score">{res.score}<small className="muted" style={{ fontSize: 18 }}>/100</small></div>
+      <div className="bar"><i style={{ width: `${res.score}%` }} /></div><p className="muted">{res.summary}</p>
+      <h3>Échéances</h3>{res.deadlines.map(d => <div className="dl" key={d.date}><strong>{d.date}</strong> <span className={d.passed ? "tag" : "tag ok"}>{d.passed ? "ÉCHÉANCE DÉPASSÉE" : "À VENIR"}</span><div className="muted">{d.text}</div></div>)}
+      <h3>Aperçu du plan d'action</h3>{res.actions.slice(0, 2).map((a, i) => <div className="task" key={a.title}><div className="n">{i + 1}</div><div><strong>{a.title}</strong><div className="muted">{a.body}</div></div></div>)}
+      <div className="card" style={{ background: "#f0f6ff" }}>
+        <div className="eyebrow">Rapport complet</div><h3>Checklist imprimable / PDF personnalisée</h3>
+        <p className="muted">Toutes les actions, échéances et sources officielles.</p><div className="price">19 €</div>
+        {err && <div className="err" role="alert">{err}</div>}
+        <button className="btn" onClick={buy} disabled={busy}>{busy ? "Redirection…" : "Obtenir mon rapport"}</button>
+      </div>
+    </section>}
+  </>);
 }
